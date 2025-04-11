@@ -2,23 +2,28 @@
 <html>
 <head>
     <title>Striker Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <style>
-        body {
+        /* HTML & body full height */
+        html, body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
+            height: 100%;
+        }
+        body {
             background: #1a1a1a;
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
         }
+        /* Fullscreen game container */
         #gameContainer {
             position: relative;
-            width: 95vmin;
-            height: 95vmin;
+            width: 100vw;
+            height: 100vh;
             background: #2a2a2a;
         }
         canvas {
@@ -115,11 +120,10 @@ const target = {
     color: '#4ecdc4'
 };
 
-// Set 1:1 aspect ratio
+// Resize canvas to full viewport dimensions
 function resizeCanvas() {
-    const size = Math.min(window.innerWidth, window.innerHeight) * 0.95;
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     resetStriker();
 }
 resizeCanvas();
@@ -174,8 +178,8 @@ function spawnTarget() {
     target.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
     
     // Random position anywhere on canvas
-    target.x = Math.random() * (canvas.width - target.size) + target.size/2;
-    target.y = scrollOffset + Math.random() * (canvas.height - target.size) + target.size/2;
+    target.x = Math.random() * (canvas.width - target.size) + target.size / 2;
+    target.y = scrollOffset + Math.random() * (canvas.height - target.size) + target.size / 2;
 }
 
 // Physics and collision detection
@@ -187,13 +191,13 @@ function checkCollision() {
     
     switch(target.shape) {
         case 'circle':
-            return Math.hypot(dx, dy) < (targetRadius + strikerRadius/2);
+            return Math.hypot(dx, dy) < (targetRadius + strikerRadius / 2);
         case 'square':
             return (
-                striker.x > target.x - target.size/2 + strikerRadius/2 &&
-                striker.x < target.x + target.size/2 - strikerRadius/2 &&
-                striker.y > (target.y - scrollOffset) - target.size/2 + strikerRadius/2 &&
-                striker.y < (target.y - scrollOffset) + target.size/2 - strikerRadius/2
+                striker.x > target.x - target.size / 2 + strikerRadius / 2 &&
+                striker.x < target.x + target.size / 2 - strikerRadius / 2 &&
+                striker.y > (target.y - scrollOffset) - target.size / 2 + strikerRadius / 2 &&
+                striker.y < (target.y - scrollOffset) + target.size / 2 - strikerRadius / 2
             );
     }
     return false;
@@ -315,10 +319,10 @@ function render() {
     ctx.beginPath();
     switch(target.shape) {
         case 'circle':
-            ctx.arc(target.x, target.y - scrollOffset, target.size/2, 0, Math.PI*2);
+            ctx.arc(target.x, target.y - scrollOffset, target.size / 2, 0, Math.PI * 2);
             break;
         case 'square':
-            ctx.rect(target.x - target.size/2, target.y - scrollOffset - target.size/2, target.size, target.size);
+            ctx.rect(target.x - target.size / 2, target.y - scrollOffset - target.size / 2, target.size, target.size);
             break;
     }
     ctx.fill();
@@ -326,7 +330,7 @@ function render() {
     // Draw striker
     ctx.fillStyle = striker.color;
     ctx.beginPath();
-    ctx.arc(striker.x, striker.y, striker.radius, 0, Math.PI*2);
+    ctx.arc(striker.x, striker.y, striker.radius, 0, Math.PI * 2);
     ctx.fill();
     
     // Draw drag indicator
@@ -340,7 +344,7 @@ function render() {
         
         ctx.fillStyle = 'rgba(255, 100, 100, 0.3)';
         ctx.beginPath();
-        ctx.arc(striker.dragStart.x, striker.dragStart.y, striker.radius, 0, Math.PI*2);
+        ctx.arc(striker.dragStart.x, striker.dragStart.y, striker.radius, 0, Math.PI * 2);
         ctx.fill();
     }
     
