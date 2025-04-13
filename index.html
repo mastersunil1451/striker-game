@@ -4,74 +4,23 @@
     <title>Striker Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <style>
-        /* HTML & body full height */
-        html, body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100%;
-        }
-        body {
-            background: #1a1a1a;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        /* Fullscreen game container */
-        #gameContainer {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #2a2a2a;
-        }
-        canvas {
-            display: block;
-        }
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        button {
-            padding: 15px 30px;
-            margin: 10px;
-            font-size: 1.2em;
-            background: #4CAF50;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-        }
-        #score {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 1.5em;
-        }
+        html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; }
+        body { background: #1a1a1a; color: white; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; }
+        #gameContainer { position: relative; width: 100vw; height: 100vh; background: #2a2a2a; }
+        canvas { display: block; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        button { padding: 15px 30px; margin: 10px; font-size: 1.2em; background: #4CAF50; border: none; border-radius: 5px; color: white; cursor: pointer; }
+        #score { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 1.5em; }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-        
         <div id="homeScreen" class="screen">
             <h1>Striker Game</h1>
             <button onclick="startGame()">🎮 Start Game</button>
             <button onclick="showHowToPlay()">📖 How to Play</button>
         </div>
-        
         <div id="howToScreen" class="screen" style="display: none;">
             <h2>How to Play</h2>
             <p>1. Drag the striker in the opposite direction to aim</p>
@@ -80,17 +29,14 @@
             <p>4. Screen scrolls down after each successful hit</p>
             <button onclick="goHome()">↩️ Back</button>
         </div>
-        
         <div id="gameOverScreen" class="screen" style="display: none;">
             <h2>Game Over!</h2>
             <p id="finalScore"></p>
             <button onclick="restartGame()">🎯 Restart</button>
             <button onclick="goHome()">↩️ Back</button>
         </div>
-        
         <div id="score">Score: 0</div>
     </div>
-
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -98,18 +44,20 @@ let gameLoop;
 let gameState = 'home';
 let score = 0;
 let scrollOffset = 0;
+let animationFrame = null;
 
-// Game objects
 const striker = {
     x: 0,
     y: 0,
     radius: 20,
     color: '#ff6b6b',
-    velocityX: 0,
-    velocityY: 0,
     isDragging: false,
     dragStart: {x: 0, y: 0},
-    hasLaunched: false
+    hasLaunched: false,
+    startX: 0,
+    startY: 0,
+    targetX: 0,
+    targetY: 0
 };
 
 const target = {
@@ -120,7 +68,6 @@ const target = {
     color: '#4ecdc4'
 };
 
-// Resize canvas to full viewport dimensions
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -129,7 +76,6 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// Game controls
 function startGame() {
     gameState = 'playing';
     score = 0;
@@ -160,29 +106,26 @@ function goHome() {
     document.querySelectorAll('.screen').forEach(screen => screen.style.display = 'none');
     document.getElementById('homeScreen').style.display = 'flex';
     cancelAnimationFrame(gameLoop);
+    cancelAnimationFrame(animationFrame);
 }
 
-// Striker controls
 function resetStriker() {
     striker.x = canvas.width / 2;
-    striker.y = canvas.height / 2; // Centered vertically
-    striker.velocityX = 0;
-    striker.velocityY = 0;
+    striker.y = canvas.height / 2;
+    striker.isDragging = false;
     striker.hasLaunched = false;
+    striker.startX = striker.x;
+    striker.startY = striker.y;
 }
 
-// Target spawning with full screen coverage
 function spawnTarget() {
     target.shape = ['circle', 'square'][Math.floor(Math.random() * 2)];
     target.size = Math.random() * 40 + 60;
     target.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
-    
-    // Random position anywhere on canvas
     target.x = Math.random() * (canvas.width - target.size) + target.size / 2;
     target.y = scrollOffset + Math.random() * (canvas.height - target.size) + target.size / 2;
 }
 
-// Physics and collision detection
 function checkCollision() {
     const targetRadius = target.size / 2;
     const strikerRadius = striker.radius;
@@ -203,12 +146,11 @@ function checkCollision() {
     return false;
 }
 
-// Input handling
-canvas.addEventListener('mousedown', (e) => handleStart(e));
-canvas.addEventListener('touchstart', (e) => handleStart(e.changedTouches[0]));
+canvas.addEventListener('mousedown', handleStart);
+canvas.addEventListener('touchstart', e => handleStart(e.changedTouches[0]));
 
 function handleStart(e) {
-    if (gameState !== 'playing' || striker.velocityX !== 0 || striker.velocityY !== 0) return;
+    if (gameState !== 'playing' || striker.hasLaunched) return;
     
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -221,8 +163,8 @@ function handleStart(e) {
     }
 }
 
-canvas.addEventListener('mousemove', (e) => handleMove(e));
-canvas.addEventListener('touchmove', (e) => handleMove(e.changedTouches[0]));
+canvas.addEventListener('mousemove', handleMove);
+canvas.addEventListener('touchmove', e => handleMove(e.changedTouches[0]));
 
 function handleMove(e) {
     if (!striker.isDragging) return;
@@ -248,65 +190,106 @@ function handleEnd() {
     
     if (distance > 30) {
         const angle = Math.atan2(dy, dx);
-        const force = Math.min(distance * 0.15, 20);
-        striker.velocityX = Math.cos(angle) * force;
-        striker.velocityY = Math.sin(angle) * force;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const targetDistance = distance * 1.2;
+        
+        striker.startX = striker.x;
+        striker.startY = striker.y;
+        striker.targetX = centerX + Math.cos(angle) * targetDistance;
+        striker.targetY = centerY + Math.sin(angle) * targetDistance;
+        
+        striker.targetX = Math.max(striker.radius, 
+            Math.min(canvas.width - striker.radius, striker.targetX));
+        striker.targetY = Math.max(striker.radius, 
+            Math.min(canvas.height - striker.radius, striker.targetY));
+        
         striker.hasLaunched = true;
+        animateStriker(); // Now with dynamic duration
     } else {
         resetStriker();
     }
 }
 
-// Game loop
+function animateStriker() {
+    // 💡 Dynamic duration based on distance
+    const baseSpeed = 0.05; // Pixels per millisecond
+    const travelDistance = Math.hypot(
+        striker.targetX - striker.startX,
+        striker.targetY - striker.startY
+    );
+    const duration = Math.max(300, Math.min(1500, travelDistance / baseSpeed));
+    
+    const startTime = performance.now();
+    
+    function easeOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const t = easeOutQuad(progress);
+        
+        striker.x = striker.startX + (striker.targetX - striker.startX) * t;
+        striker.y = striker.startY + (striker.targetY - striker.startY) * t;
+        
+        if (progress < 1) {
+            animationFrame = requestAnimationFrame(animate);
+        } else {
+            striker.x = striker.targetX;
+            striker.y = striker.targetY;
+            checkStrikerResult();
+        }
+        render();
+    }
+    animationFrame = requestAnimationFrame(animate);
+}
+
+
+function animateStriker() {
+    const duration = 1200; // 0.8s slower animation
+    const startTime = performance.now();
+    
+    function easeOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const t = easeOutQuad(progress);
+        
+        striker.x = striker.startX + (striker.targetX - striker.startX) * t;
+        striker.y = striker.startY + (striker.targetY - striker.startY) * t;
+        
+        if (progress < 1) {
+            animationFrame = requestAnimationFrame(animate);
+        } else {
+            striker.x = striker.targetX;
+            striker.y = striker.targetY;
+            checkStrikerResult();
+        }
+        render();
+    }
+    animationFrame = requestAnimationFrame(animate);
+}
+
+function checkStrikerResult() {
+    if (checkCollision()) {
+        score++;
+        scrollOffset += 100;
+        resetStriker();
+        spawnTarget();
+    } else {
+        gameState = 'gameOver';
+        document.getElementById('finalScore').innerText = `Score: ${score}`;
+        document.getElementById('gameOverScreen').style.display = 'flex';
+    }
+}
+
 function update() {
     if (gameState !== 'playing') return;
-    
-    // Update physics
-    striker.x += striker.velocityX;
-    striker.y += striker.velocityY;
-    
-    // Apply friction
-    striker.velocityX *= 0.95;
-    striker.velocityY *= 0.95;
-    
-    // Boundary collision
-    if (striker.x - striker.radius < 0) {
-        striker.x = striker.radius;
-        striker.velocityX *= -0.5;
-    }
-    if (striker.x + striker.radius > canvas.width) {
-        striker.x = canvas.width - striker.radius;
-        striker.velocityX *= -0.5;
-    }
-    if (striker.y - striker.radius < 0) {
-        striker.y = striker.radius;
-        striker.velocityY *= -0.5;
-    }
-    if (striker.y + striker.radius > canvas.height) {
-        striker.y = canvas.height - striker.radius;
-        striker.velocityY *= -0.5;
-    }
-    
-    // Check if stopped
-    if (Math.abs(striker.velocityX) < 0.1 && Math.abs(striker.velocityY) < 0.1) {
-        striker.velocityX = 0;
-        striker.velocityY = 0;
-        
-        if (striker.hasLaunched) {
-            if (checkCollision()) {
-                score++;
-                scrollOffset += 100; // Scroll down Y-axis
-                resetStriker();
-                spawnTarget();
-            } else {
-                gameState = 'gameOver';
-                document.getElementById('finalScore').innerText = `Score: ${score}`;
-                document.getElementById('gameOverScreen').style.display = 'flex';
-                cancelAnimationFrame(gameLoop);
-            }
-        }
-    }
-    
     render();
     requestAnimationFrame(update);
 }
@@ -341,18 +324,15 @@ function render() {
         ctx.moveTo(striker.dragStart.x, striker.dragStart.y);
         ctx.lineTo(striker.x, striker.y);
         ctx.stroke();
-        
         ctx.fillStyle = 'rgba(255, 100, 100, 0.3)';
         ctx.beginPath();
         ctx.arc(striker.dragStart.x, striker.dragStart.y, striker.radius, 0, Math.PI * 2);
         ctx.fill();
     }
     
-    // Update score
     document.getElementById('score').innerText = `Score: ${score}`;
 }
 
-// Initial setup
 resetStriker();
 </script>
 </body>
