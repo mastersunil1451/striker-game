@@ -151,7 +151,6 @@ canvas.addEventListener('touchstart', e => handleStart(e.changedTouches[0]));
 
 function handleStart(e) {
     if (gameState !== 'playing' || striker.hasLaunched) return;
-    
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -168,11 +167,9 @@ canvas.addEventListener('touchmove', e => handleMove(e.changedTouches[0]));
 
 function handleMove(e) {
     if (!striker.isDragging) return;
-    
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    
     striker.x = mouseX;
     striker.y = mouseY;
 }
@@ -203,27 +200,26 @@ function handleEnd() {
             Math.min(canvas.width - striker.radius, striker.targetX));
         striker.targetY = Math.max(striker.radius, 
             Math.min(canvas.height - striker.radius, striker.targetY));
-        
+            
         striker.hasLaunched = true;
-        animateStriker(); // Now with dynamic duration
+        animateStriker();
     } else {
         resetStriker();
     }
 }
 
 function animateStriker() {
-    // 💡 Dynamic duration based on distance
-    const baseSpeed = 0.05; // Pixels per millisecond
+    const baseSpeed = 0.15; // Increased base speed
     const travelDistance = Math.hypot(
         striker.targetX - striker.startX,
         striker.targetY - striker.startY
     );
+    
     const duration = Math.max(300, Math.min(1500, travelDistance / baseSpeed));
-    
     const startTime = performance.now();
-    
+
     function easeOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        return t * (2 - t); // True ease-out quadratic
     }
 
     function animate(currentTime) {
@@ -243,35 +239,7 @@ function animateStriker() {
         }
         render();
     }
-    animationFrame = requestAnimationFrame(animate);
-}
-
-
-function animateStriker() {
-    const duration = 1200; // 0.8s slower animation
-    const startTime = performance.now();
     
-    function easeOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
-    function animate(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const t = easeOutQuad(progress);
-        
-        striker.x = striker.startX + (striker.targetX - striker.startX) * t;
-        striker.y = striker.startY + (striker.targetY - striker.startY) * t;
-        
-        if (progress < 1) {
-            animationFrame = requestAnimationFrame(animate);
-        } else {
-            striker.x = striker.targetX;
-            striker.y = striker.targetY;
-            checkStrikerResult();
-        }
-        render();
-    }
     animationFrame = requestAnimationFrame(animate);
 }
 
