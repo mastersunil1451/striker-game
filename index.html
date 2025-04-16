@@ -11,10 +11,59 @@
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box; }
         button { padding: 15px 30px; margin: 10px; font-size: 1.2em; background: #4CAF50; border: none; border-radius: 5px; color: white; cursor: pointer; }
         #score { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 1.5em; }
+    #ad-overlay {
+      height: 290px;
+      width: 300px;
+      position: absolute;
+      background-color: white;
+      margin: auto;
+      display: none;
+      z-index: 99;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      p {
+        color: #000000;
+        font-size: 13px;
+        position: absolute;
+        bottom: -16px;
+        left: 0;
+        padding: 5px;
+      }
+    }
+    #close-start-btn {
+        position: absolute;
+        right: -10px;
+        top: -10px;
+        aspect-ratio: 1/1;
+        height: 25px;
+        color: black;
+        background-color: white;
+        border: 1px solid black;
+        padding: 0;
+        border-radius: 0;
+      }
     </style>
 </head>
 <body>
     <div id="gameContainer">
+        <div id="ad-overlay">
+            <button id="close-start-btn" onclick="realRestartGame()">X</button>
+            <p>Visiting this small ad helps us to grow and update. Thanks for your support! 💖</p>
+            <!-- Adsterra Ads Code -->
+  <script type="text/javascript">
+    atOptions = {
+      'key' : '15cd165eb5c6f2b40807bacca76d739c',
+      'format' : 'iframe',
+      'height' : 250,
+      'width' : 300,
+      'params' : {}
+    };
+  </script>
+  <script type="text/javascript" src="//www.highperformanceformat.com/15cd165eb5c6f2b40807bacca76d739c/invoke.js"></script>
+          </div>
+
         <canvas id="gameCanvas"></canvas>
         <div id="homeScreen" class="screen">
             <h1>Striker Game</h1>
@@ -36,8 +85,12 @@
             <button onclick="goHome()">↩️ Back</button>
         </div>
         <div id="score">Score: 0</div>
+
+       
     </div>
 <script>
+const adOverlay = document.getElementById('ad-overlay');
+const closeBtn = document.getElementById('close-start-btn');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let gameLoop;
@@ -86,7 +139,7 @@ function startGame() {
     gameLoop = requestAnimationFrame(update);
 }
 
-function restartGame() {
+function realRestartGame() {
     gameState = 'playing';
     score = 0;
     scrollOffset = 0;
@@ -94,7 +147,13 @@ function restartGame() {
     spawnTarget();
     document.getElementById('gameOverScreen').style.display = 'none';
     gameLoop = requestAnimationFrame(update);
+    adOverlay.style.display = 'none';
 }
+
+function restartGame() {
+    adOverlay.style.display = 'block';
+}
+
 
 function showHowToPlay() {
     document.getElementById('homeScreen').style.display = 'none';
